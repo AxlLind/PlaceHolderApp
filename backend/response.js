@@ -1,13 +1,13 @@
 class Response {
-    success(res, flag, message, payload) {
-        return this.createResponse(res, 200, flag, message, payload);
+    success(res, message, payload) {
+        return this.createResponse(res, message, payload, 200, true);
     }
 
-    fail(res, flag, message, payload) {
-        return this.createResponse(res, 400, flag, message, payload);
+    fail(res, message, payload) {
+        return this.createResponse(res, message, payload, 400, false);
     }
 
-    createResponse(res, status, flag, message, payload) {
+    createResponse(res, message, payload, status, flag) {
         const obj = {
             status,
             flag,

@@ -1,41 +1,43 @@
-let _ = require('lodash');
-let knex = require('knex')({
-    client: 'pg',
-    connection: {
-        // TODO: move to a global config object
-        host: 'localhost',
-        user: 'postgres',
-        database: 'shopping_list'
-    }
+let _      = require('lodash');
+let config = require('./config.js');
+let knex   = require('knex')({
+    client: config.dbClient,
+    connection: config.dbConn,
 });
 
 class Database {
-    checkUserExists(email) {
+    checkEmail(email) {
         return knex('users')
             .select('*')
             .where({ email })
             .then(rows => !_.isEmpty(rows));
     }
 
-    createUser(email, pw_hash, pw_salt) {
-        if (!/.+@.+\..+/.test(email))
-            return Promise.reject(new Error('Invalid Email'));
+    createUser(email, pw_hash) {
+        const date_created = new Date();
         return knex('users')
-            .insert({
-                email,
-                pw_hash,
-                pw_salt,
-                date_created: new Date(),
-            });
-        }
+            .insert({ email, pw_hash, date_created });
+    }
 
-    createList(list_name, user_id) {
-        return knex('lists')
-        .insert({
-            list_name,
-            user_id,
-            date_created: new Date(),
-        });
+    createList(list_name, email) {
+        return knex('users')
+            .select('user_id')
+            .where({ email })
+            .then(rows => rows[0].user_id)
+            .then(user_id => knex('lists')
+                .insert({
+                    list_name,
+                    user_id,
+                    date_created: new Date(),
+                })
+            );
+    }
+
+    getUser(email) {
+        return knex('users')
+            .select('*')
+            .where({ email })
+            .then(rows => _.isEmpty(rows) ? {} : rows[0]);
     }
 
     addItemToList(list_id, item) {
@@ -43,7 +45,22 @@ class Database {
             .insert({
                 list_id,
                 item,
-            })
+            });
+    }
+
+    getUsersLists(email) {
+        return knex('users')
+            .select('list_id', 'list_name', 'date_created')
+            .join('lists', 'users.user_id', '=', 'lists.user_id')
+            .where({ email });
+    }
+
+    getUsersSharedLists(email) {
+        return knex('users')
+            .select('lists.list_id', 'list_name', 'date_created')
+            .join('sharedlists', 'users.user_id', '=', 'sharedlists.user_id')
+            .join('lists', 'sharedlists.list_id', '=', 'lists.list_id')
+            .where({ email });
     }
 
 }
