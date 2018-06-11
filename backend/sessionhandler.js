@@ -1,9 +1,11 @@
-let randomstring = require('randomstring');
-let config = require('./config.js');
+const randomstring = require('randomstring');
+const config = require('./config.js');
 
 class SessionHandler {
     constructor() {
-        this.tokens = {};
+        this.tokens = {
+            testToken: 'test@test.com'
+        };
     }
 
     validate(token, email) {

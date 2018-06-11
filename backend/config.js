@@ -1,4 +1,3 @@
-
 module.exports = {
     port: 3000,
     sessionTime: 1000 * 60 * 10,

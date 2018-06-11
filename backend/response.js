@@ -1,20 +1,24 @@
 class Response {
-    success(res, message, payload) {
-        return this.createResponse(res, message, payload, 200, true);
+    success(res, message, data) {
+        return this.createResponse(res, message, data, 200, true);
     }
 
-    fail(res, message, payload) {
-        return this.createResponse(res, message, payload, 400, false);
+    fail(res, message, data) {
+        return this.createResponse(res, message, data, 400, false);
     }
 
-    createResponse(res, message, payload, status, flag) {
+    genericFail(res) {
+        return this.createResponse(res, 'Something went wrong', undefined, 400, false);
+    }
+
+    createResponse(res, message, data, status, flag) {
         const obj = {
             status,
             flag,
             message,
         }
-        if (payload)
-            obj.payload = payload;
+        if (data)
+            obj.data = data;
         return res.status(status).send(obj);
     }
 }
