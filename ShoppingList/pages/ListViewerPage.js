@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, ScrollView, AsyncStorage, Text } from 'react-native';
 import _ from 'lodash';
-import config from './config.js';
-import backend from './backend.js';
+import config from './../global/config.js';
+import backend from './../global/backend.js';
 
 export default class ListViewerPage extends React.Component {
     static navigationOptions = {
@@ -27,11 +27,8 @@ export default class ListViewerPage extends React.Component {
         AsyncStorage.getItem('email')
             .then(email => this.setState({ email }))
             .then(() => AsyncStorage.getItem('token'))
-            .then(token => {this.setState({ token }); console.log(token)})
-            .then(() => backend.getLists({
-                email: this.state.email,
-                token: this.state.token,
-            }))
+            .then(token => this.setState({ token }))
+            .then(() => backend.getLists(this.state.email, this.state.token))
             .then(res => {
                 if (res.flag === false)
                     return Promise.reject(res.message);
@@ -44,9 +41,16 @@ export default class ListViewerPage extends React.Component {
     render() {
         return (
         <ScrollView style={styles.container}>
-            {_.map(this.state.lists, list => <Text style={styles.text} key={list.list_id}>{`${list.list_id}: ${list.list_name}`}</Text>)}
+            {_.map(this.state.lists, list =>
+                <Text style={styles.text} key={list.list_id} onPress={() => this.switchToList(list.list_id)}>
+                {`${list.list_id}: ${list.list_name}`}
+                </Text>)}
         </ScrollView>
         );
+    }
+
+    switchToList(list_id) {
+        this.props.navigation.navigate('List', { list_id });
     }
 }
 

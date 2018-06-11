@@ -110,9 +110,15 @@ app.post('/api/addItemToList', validateUser, (req, res) => {
         item: 'No item supplied'
     })) return;
 
-    db.addItemToList(req.body.list_id, req.body.item)
-        .then(() => Response.success(res, 'Item added'))
-        .catch(() => Response.genericFail(res));
+    db.checkUserOwnsList(req.body.email, req.body.list_id)
+        .then(ownsList => {
+            if (!ownsList) {
+                Response.fail(res, 'Accessing list you do not own');
+                return Promise.reject('Accessing list you do not own');
+            }
+        })
+        .then(() => db.addItemToList(req.body.list_id, req.body.item))
+        .then(() => Response.success(res, 'Item added'));
 });
 
 app.post('/api/getListItems', validateUser, (req, res) => {

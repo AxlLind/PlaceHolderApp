@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, TextInput, Text, Button, AsyncStorage } from 'react-native';
-import config from './config.js';
-import backend from './backend.js';
+import config from './../global/config.js';
+import backend from './../global/backend.js';
 import sha256 from 'sha256';
 
 export default class LoginPage extends React.Component {
@@ -37,17 +37,16 @@ export default class LoginPage extends React.Component {
     }
 
     login() {
-        backend.requestSessionToken({
-            email: this.state.email,
-            pw_hash: this.state.pw,
-        })
-        .then(res => {
-            if (res.flag === false)
-                return this.setState({ text: res.message });
-            AsyncStorage.multiSet([['token', res.data.token],['email', this.state.email]])
-                .then(() => this.props.navigation.navigate('ListViewer'))
-        })
-        .catch(console.log);
+        backend.requestSessionToken(this.state.email, this.state.pw)
+            .then(res => {
+                if (res.flag === false) {
+                    setTimeout(() => this.setState({ text: '' }), 1000);
+                    return this.setState({ text: res.message });
+                }
+                AsyncStorage.multiSet([['token', res.data.token],['email', this.state.email]])
+                    .then(() => this.props.navigation.navigate('ListViewer'))
+            })
+            .catch(console.log);
     }
 }
 

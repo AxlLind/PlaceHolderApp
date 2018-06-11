@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, TextInput, Text, Button } from 'react-native';
-import config from './config.js';
-import backend from './backend.js';
+import config from './../global/config.js';
+import backend from './../global/backend.js';
 import sha256 from 'sha256';
 
 export default class SignUpPage extends React.Component {
@@ -44,13 +44,10 @@ export default class SignUpPage extends React.Component {
     }
 
     signUp() {
-        backend.registerUser({
-            email: this.state.email,
-            pw_hash: sha256(this.state.pw),
-        })
-        .then(res => this.setState({test: res.flag === false ? 'Nope' : 'Validated'}))
-        .then(() => this.props.navigation.goBack())
-        .catch(console.log);
+        backend.registerUser(this.state.email, sha256(this.state.pw))
+            .then(res => this.setState({test: res.flag === false ? 'Nope' : 'Validated'}))
+            .then(() => this.props.navigation.goBack())
+            .catch(console.log);
     }
 }
 
