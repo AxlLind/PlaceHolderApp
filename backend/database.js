@@ -21,6 +21,13 @@ class Database {
             .then(rows => !_.isEmpty(rows));
     }
 
+    checkItemAlreadyInList(list_id, item) {
+        return knex('listitems')
+            .select('*')
+            .where({ list_id, item })
+            .then(rows => !_.isEmpty(rows));
+    }
+
     createUser(email, pw_hash) {
         const date_created = new Date();
         return knex('users')

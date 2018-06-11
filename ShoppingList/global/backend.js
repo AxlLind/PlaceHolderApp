@@ -5,6 +5,7 @@ class Backend {
     getLists(email, token)                          { return this.postReq({email, token}, '/api/getLists'); }
     getSharedLists(email, token)                    { return this.postReq({email, token}, '/api/getSharedLists'); }
     registerUser(email, pw_hash)                    { return this.postReq({email, pw_hash}, '/api/registerUser'); }
+    testSessionToken(email, token)                  { return this.postReq({email, token}, '/api/testSessionToken'); }
     requestSessionToken(email, pw_hash)             { return this.postReq({email, pw_hash}, '/api/requestSessionToken'); }
     getListItems(email, token, list_id)             { return this.postReq({email, token, list_id}, '/api/getListItems'); }
     deleteList(email, token, list_id)               { return this.postReq({email, token, list_id}, '/api/deleteList'); }

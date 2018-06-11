@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View, TextInput, Text, Button } from 'react-native';
+import { StyleSheet, View, TextInput, Text, Button, AsyncStorage } from 'react-native';
+import _ from 'lodash'
 import config from './../global/config.js';
 import backend from './../global/backend.js';
 import sha256 from 'sha256';
@@ -18,7 +19,6 @@ export default class SignUpPage extends React.Component {
     constructor() {
         super();
         this.state = {
-            test: 'Sign Up',
             email: 'Email',
             pw: 'Password',
         };
@@ -27,7 +27,6 @@ export default class SignUpPage extends React.Component {
     render() {
         return (
         <View style={styles.container}>
-            <Text style={styles.text}>{this.state.test}</Text>
             <TextInput
                 style={styles.text}
                 value={this.state.email}
@@ -44,21 +43,32 @@ export default class SignUpPage extends React.Component {
     }
 
     signUp() {
-        backend.registerUser(this.state.email, sha256(this.state.pw))
-            .then(res => this.setState({test: res.flag === false ? 'Nope' : 'Validated'}))
-            .then(() => this.props.navigation.goBack())
+        const pw_hash = sha256(this.state.pw), email = this.state.email;
+        backend.registerUser(email, pw_hash)
+            .then(res => {
+                if (res.flag === false)
+                    return Promise.reject(res.message);
+            })
+            .then(() => backend.requestSessionToken(email, pw_hash))
+            .then(res => {
+                if (res.flag === false)
+                    return Promise.reject(res.message);
+                return res.data.token;
+            })
+            .then(token => AsyncStorage.multiSet(_.toPairs({email, token})))
+            .then(() => this.props.navigation.navigate('ListViewer'))
             .catch(console.log);
     }
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#222233',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: {
-    color: '#aaccff',
-  }
+    container: {
+        flex: 1,
+        backgroundColor: '#222233',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    text: {
+        color: '#aaccff',
+    }
 });

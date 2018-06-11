@@ -47,6 +47,10 @@ app.post('/api/getSharedLists', validateUser, (req, res) => {
         .catch(() => Response.genericFail(res));
 });
 
+app.post('/api/testSessionToken', validateUser, (req, res) => {
+    Response.success(res, 'Token still valid');
+});
+
 app.post('/api/requestSessionToken', (req, res) => {
     if (!verifyProperties(req, res, {
         email: 'Email not supplied',
@@ -117,6 +121,13 @@ app.post('/api/addItemToList', validateUser, (req, res) => {
                 return Promise.reject('Accessing list you do not own');
             }
         })
+        .then(() => db.checkItemAlreadyInList(req.body.list_id, req.body.item))
+        .then(inList => {
+            if (inList) {
+                Response.fail(res, 'Item already in list');
+                return Promise.reject('Item already in list');
+            }
+        })
         .then(() => db.addItemToList(req.body.list_id, req.body.item))
         .then(() => Response.success(res, 'Item added'));
 });
@@ -149,7 +160,8 @@ app.post('/api/deleteList', validateUser, (req, res) => {
                 return Promise.reject('Accessing list you do not own');
             }
         })
-        .then(() => db.deleteList(req.body.list_id));
+        .then(() => db.deleteList(req.body.list_id))
+        .then(() => Response.success(res, 'List deleted'))
 });
 
 app.post('/api/deleteItemFromList', validateUser, (req, res) => {
@@ -165,7 +177,8 @@ app.post('/api/deleteItemFromList', validateUser, (req, res) => {
                 return Promise.reject('Accessing list you do not own');
             }
         })
-        .then(() => db.deleteItemFromList(req.body.list_id, req.body.item));
+        .then(() => db.deleteItemFromList(req.body.list_id, req.body.item))
+        .then(() => Response.success(res, 'Item deleted'));
 })
 
 // Redirects any unspecified paths here, simply return an error
