@@ -26,9 +26,3 @@ CREATE TABLE sharedlists (
     list_id INT NOT NULL REFERENCES Lists (list_id),
     user_id INT NOT NULL REFERENCES Users (user_id)
 );
-
-INSERT INTO Users (email, pw_hash, date_created) VALUES ('Test User', '1234', now());
-INSERT INTO Users (email, pw_hash, date_created) VALUES ('Test User2', '1234', now());
-INSERT INTO Users (email, pw_hash, date_created) VALUES ('Test User3', '1234', now());
-
-INSERT INTO Lists (user_id, list_name, date_created) VALUES (1, 'Awesome List', now());

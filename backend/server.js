@@ -14,7 +14,7 @@ const verifyProperties = (req, res, properties) => {
     for (let prop in properties) {
         if (_.has(req.body, prop))
             continue;
-        Response.fail(res, properties[prop]);
+        Response.missingParam(res, prop);
         return false;
     }
     return true;
@@ -27,7 +27,7 @@ const validateUser = (req, res, next) => {
     })) return;
 
     if (!sessionHandler.validate(req.body.token, req.body.email))
-        return Response.fail(res, 'Invalid session token');
+        return Response.invalidAuth(res);
     next();
 }
 
@@ -35,20 +35,20 @@ app.post('/version', (req, res) =>
     Response.success(res, 'Version passed', { version: '0.0.1' })
 );
 
+app.post('/api/testSessionToken', validateUser, (req, res) =>
+    Response.success(res, 'Token still valid')
+);
+
 app.post('/api/getLists', validateUser, (req, res) => {
     db.getUsersLists(req.body.email)
         .then(lists => Response.success(res, 'Serving lists', { lists }))
-        .catch(() => Response.genericFail(res));
+        .catch(() => Response.serverError(res));
 });
 
 app.post('/api/getSharedLists', validateUser, (req, res) => {
     db.getUsersSharedLists(req.body.email)
         .then(lists => Response.success(res, 'Serving shared lists', { lists }))
-        .catch(() => Response.genericFail(res));
-});
-
-app.post('/api/testSessionToken', validateUser, (req, res) => {
-    Response.success(res, 'Token still valid');
+        .catch(() => Response.serverError(res));
 });
 
 app.post('/api/requestSessionToken', (req, res) => {
@@ -60,7 +60,7 @@ app.post('/api/requestSessionToken', (req, res) => {
     db.getUser(req.body.email)
         .then(user => {
             if (_.isEmpty(user)) {
-                Response.fail(res, 'No account tied to that email');
+                Response.invalidParam(res, 'email');
                 return Promise.reject('Invalid email');
             }
             return user;
@@ -68,12 +68,11 @@ app.post('/api/requestSessionToken', (req, res) => {
         .then(user => bcrypt.compare(req.body.pw_hash, user.pw_hash))
         .then(validated => {
             if (!validated) {
-                Response.fail(res, 'Invalid password');
+                Response.invalidAuth(res);
                 return Promise.reject('Invalid password');
             }
         })
-        .then(() =>
-            Response.success(res, 'Session validated', {
+        .then(() => Response.success(res, 'Session validated', {
                 token: sessionHandler.addToken(req.body.email),
             })
         );
@@ -85,11 +84,11 @@ app.post('/api/registerUser', (req, res) => {
         pw_hash: 'Password hash not supplied'
     })) return;
     if (!/.+@.+\..+/.test(req.body.email)) // ensure it is 'sort of' an email
-        return Response.fail(res, 'Invalid email');
+        return Response.invalidParam(res, 'email');
     db.checkEmail(req.body.email)
         .then(exists => {
             if (exists) {
-                Response.fail(res, 'Email already tied to an account')
+                Response.invalidParam(res, 'email');
                 return Promise.reject('Invalid email');
             }
         })
@@ -105,7 +104,7 @@ app.post('/api/createList', validateUser, (req, res) => {
 
     db.createList(req.body.list_name, req.body.email)
         .then(() => Response.success(res, 'List created'))
-        .catch(() => Response.genericFail(res));
+        .catch(() => Response.serverError(res));
 });
 
 app.post('/api/addItemToList', validateUser, (req, res) => {
@@ -117,14 +116,14 @@ app.post('/api/addItemToList', validateUser, (req, res) => {
     db.checkUserOwnsList(req.body.email, req.body.list_id)
         .then(ownsList => {
             if (!ownsList) {
-                Response.fail(res, 'Accessing list you do not own');
+                Response.invalidParam(res, 'list_id');
                 return Promise.reject('Accessing list you do not own');
             }
         })
         .then(() => db.checkItemAlreadyInList(req.body.list_id, req.body.item))
         .then(inList => {
             if (inList) {
-                Response.fail(res, 'Item already in list');
+                Response.invalidParam(res, 'item');
                 return Promise.reject('Item already in list');
             }
         })
@@ -140,12 +139,12 @@ app.post('/api/getListItems', validateUser, (req, res) => {
     db.checkUserOwnsList(req.body.email, req.body.list_id)
         .then(ownsList => {
             if (!ownsList) {
-                Response.fail(res, 'Accessing list you do not own');
+                Response.invalidParam(res, 'list_id');
                 return Promise.reject('Accessing list you do not own');
             }
         })
         .then(() => db.getListItems(req.body.list_id))
-        .then(items => Response.success(res, 'Items served', { items }))
+        .then(items => Response.success(res, 'Items served', { items }));
 });
 
 app.post('/api/deleteList', validateUser, (req, res) => {
@@ -156,7 +155,7 @@ app.post('/api/deleteList', validateUser, (req, res) => {
     db.checkUserOwnsList(req.body.email, req.body.list_id)
         .then(ownsList => {
             if (!ownsList) {
-                Response.fail(res, 'Accessing list you do not own');
+                Response.invalidParam(res, 'list_id');
                 return Promise.reject('Accessing list you do not own');
             }
         })
@@ -173,7 +172,7 @@ app.post('/api/deleteItemFromList', validateUser, (req, res) => {
     db.checkUserOwnsList(req.body.email, req.body.list_id)
         .then(ownsList => {
             if (!ownsList) {
-                Response.fail(res, 'Accessing list you do not own');
+                Response.invalidParam(res, 'list_id');
                 return Promise.reject('Accessing list you do not own');
             }
         })
@@ -182,8 +181,8 @@ app.post('/api/deleteItemFromList', validateUser, (req, res) => {
 })
 
 // Redirects any unspecified paths here, simply return an error
-app.get('*', (req, res) => Response.fail(res, 'Not valid endpoint'));
-app.post('*', (req, res) => Response.fail(res, 'Not valid endpoint'));
+app.get('*', (req, res) => Response.invalidEndpoint(res));
+app.post('*', (req, res) => Response.invalidEndpoint(res));
 
 app.listen(config.port, '0.0.0.0', () => {
     console.log(`Server up! Listening on: localhost:${config.port}`);

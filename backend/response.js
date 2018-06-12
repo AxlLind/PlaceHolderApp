@@ -1,22 +1,39 @@
+const codes = {
+    success: 0,
+    server: 1,
+    invalidAuth: 2,
+    invalidParam: 3,
+    missingParam: 4,
+    invalidEndpoint: 5,
+};
+
 class Response {
     success(res, message, data) {
-        return this.createResponse(res, message, data, 200, true);
+        return this.createResponse(res, message, 200, codes.success, data);
     }
 
-    fail(res, message, data) {
-        return this.createResponse(res, message, data, 400, false);
+    invalidParam(res, param) {
+        return this.createResponse(res, `Invalid parameter: ${param}`, 400, codes.invalidParam);
     }
 
-    genericFail(res) {
-        return this.createResponse(res, 'Something went wrong', undefined, 400, false);
+    missingParam(res, param) {
+        return this.createResponse(res, `Missing parameter ${param}`, 400, codes.missingParam);
     }
 
-    createResponse(res, message, data, status, flag) {
-        const obj = {
-            status,
-            flag,
-            message,
-        }
+    invalidAuth(res) {
+        return this.createResponse(res, 'Invalid authentication', 401, codes.invalidAuth);
+    }
+
+    serverError(res) {
+        return this.createResponse(res, 'Internal server error', 500, codes.server);
+    }
+
+    invalidEndpoint(res) {
+        return this.createResponse(res, 'Not a valid API-endpoint', 404, codes.invalidEndpoint);
+    }
+
+    createResponse(res, message, status, code, data) {
+        const obj = { status, code, message };
         if (data)
             obj.data = data;
         return res.status(status).send(obj);
