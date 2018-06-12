@@ -1,20 +1,12 @@
 import React from 'react';
 import { StyleSheet, View, TextInput, Text, Button, AsyncStorage } from 'react-native';
 import _ from 'lodash';
-import config from './../global/config.js';
+import { config, codes } from './../global/config.js';
 import backend from './../global/backend.js';
 import sha256 from 'sha256';
 
 export default class LoginPage extends React.Component {
-    static navigationOptions = {
-        title: 'Login',
-        headerStyle: {
-            backgroundColor: '#aaccff',
-        },
-        headerTitleStyle: {
-            color: '#222233',
-        }
-    };
+    static navigationOptions = { title: 'Login' };
 
     constructor() {
         super();
@@ -26,19 +18,30 @@ export default class LoginPage extends React.Component {
     }
 
     componentDidMount() {
-        AsyncStorage.multiGet(['email', 'token'])
-            .then(keyPairs => this.setState(_.fromPairs(keyPairs)))
-            .then(() => backend.testSessionToken(this.state.email, this.state.token))
+        AsyncStorage.getItem('email')
+            .then(email => this.setState({email}))
+            .catch(console.log);
+    }
+
+    login() {
+        const {email, pw} = this.state;
+        backend.requestSessionToken(email, sha256(pw))
             .then(res => {
-                if (res.flag === false)
-                    return Promise.reject(res.message);
+                if (res.code !== codes.success) {
+                    setTimeout(() => this.setState({ text: '' }), 1000);
+                    return this.setState({ text: res.message });
+                }
+                return res.data.token;
             })
+            .then(token => AsyncStorage.multiSet(_.toPairs({
+                email: email,
+                token,
+            })))
             .then(() => this.props.navigation.navigate('ListViewer'))
             .catch(console.log);
     }
 
-    render() {
-        return (
+    render = () => (
         <View style={styles.container}>
             <Text style={styles.text}>{this.state.text}</Text>
             <TextInput style={styles.text}
@@ -54,26 +57,7 @@ export default class LoginPage extends React.Component {
             <Button title='Submit' onPress={() => this.login()}/>
             <Button title='Sign Up' onPress={() => this.props.navigation.navigate('SignUp')}/>
         </View>
-        );
-    }
-
-    login() {
-        backend.requestSessionToken(this.state.email, this.state.pw)
-            .then(res => {
-                if (res.flag === false) {
-                    setTimeout(() => this.setState({ text: '' }), 1000);
-                    return this.setState({ text: res.message });
-                }
-                return res.data.token;
-            })
-            .then(token => AsyncStorage.multiSet(_.toPairs({
-                email: this.state.email,
-                token,
-            })))
-            .then(() => this.props.navigation.navigate('ListViewer'))
-            .catch(console.log);
-
-    }
+    );
 }
 
 const styles = StyleSheet.create({

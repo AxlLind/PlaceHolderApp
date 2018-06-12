@@ -2,19 +2,11 @@ import React from 'react';
 import { StyleSheet, ScrollView, AsyncStorage, Text, View, TextInput, Button } from 'react-native';
 import _ from 'lodash';
 import Modal from 'react-native-modal';
-import config from './../global/config.js';
+import {config, codes} from './../global/config.js';
 import backend from './../global/backend.js';
 
 export default class ListPage extends React.Component {
-    static navigationOptions = nav => { return {
-        title: nav.navigation.getParam('list_name'),
-        headerStyle: {
-            backgroundColor: '#aaccff',
-        },
-        headerTitleStyle: {
-            color: '#222233',
-        }
-    }};
+    static navigationOptions = nav => ({ title: nav.navigation.getParam('list_name')});
 
     constructor() {
         super();
@@ -30,13 +22,15 @@ export default class ListPage extends React.Component {
     }
 
     populateItems() {
-        return backend.getListItems(this.state.email, this.state.token, this.state.list_id)
+        const {email, token, list_id} = this.state;
+        return backend.getListItems(email, token, list_id)
             .then(res => {
-                if (res.flag === false)
+                if (res.code !== codes.success)
                     return Promise.reject(res.message);
                 return res.data.items;
             })
             .then(items => this.setState({ items, gotItems: true }))
+            .catch(console.log);
     }
 
     componentDidMount() {
@@ -51,7 +45,7 @@ export default class ListPage extends React.Component {
     addItem() {
         backend.addItemToList(this.state.email, this.state.token, this.state.list_id, this.state.addItemName)
             .then(res => {
-                if (res.flag === false) {
+                if (res.code !== codes.success) {
                     this.setState({addItemErrorText: res.message})
                     setTimeout(() => this.setState({
                         addItemErrorText: '',
@@ -70,11 +64,10 @@ export default class ListPage extends React.Component {
     }
 
     deleteItem() {
-        const s = this.state;
-        backend.deleteItemFromList(s.email, s.token, s.list_id, s.deleteItem)
+        const {email, token, list_id, deleteItem} = this.state;
+        backend.deleteItemFromList(email, token, list_id, deleteItem)
             .then(res => {
-                // TODO: this could only fail if our token expired
-                if (res.flag === false) {
+                if (res.code !== codes.success) {
                     return Promise.reject(res.message);
                 }
             })
@@ -86,8 +79,7 @@ export default class ListPage extends React.Component {
             .catch(console.log);
     }
 
-    renderAddPopup() {
-        return (
+    renderAddPopup = () => (
         <Modal isVisible={this.state.showAddItem}>
             <View style={styles.container}>
                 <Text style={styles.text}>{this.state.addItemErrorText}</Text>
@@ -98,11 +90,9 @@ export default class ListPage extends React.Component {
                 />
             </View>
         </Modal>
-        );
-    }
+    );
 
-    renderDeletePopup() {
-        return (
+    renderDeletePopup = () => (
         <Modal isVisible={this.state.showDeleteItem}>
             <View style={styles.container}>
                 <Text style={styles.text}>{`Are you sure you want to delete '${this.state.deleteItem}'?`}</Text>
@@ -110,11 +100,9 @@ export default class ListPage extends React.Component {
                 <Button title='Cancel' onPress={() => this.setState({showDeleteItem: false})}/>
             </View>
         </Modal>
-        );
-    }
+    );
 
-    render() {
-        return (
+    render = () => (
         <ScrollView style={styles.container}>
             {this.state.items.length === 0 ? <Text style={styles.text}>{'No items in this list yet!'}</Text> :
                 _.map(this.state.items, item =>
@@ -128,8 +116,7 @@ export default class ListPage extends React.Component {
             {this.renderDeletePopup()}
             <Button title='Add Item' onPress={() => this.setState({showAddItem: true})}/>
         </ScrollView>
-        );
-    }
+    );
 }
 
 const styles = StyleSheet.create({

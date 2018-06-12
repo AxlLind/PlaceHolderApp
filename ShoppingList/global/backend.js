@@ -1,7 +1,7 @@
-import config from './config.js'
+import { config } from './config.js'
 
 class Backend {
-    version()                                       { return this.postReq({}, '/version')}
+    version()                                       { return this.postReq({}, '/version'); }
     getLists(email, token)                          { return this.postReq({email, token}, '/api/getLists'); }
     getSharedLists(email, token)                    { return this.postReq({email, token}, '/api/getSharedLists'); }
     registerUser(email, pw_hash)                    { return this.postReq({email, pw_hash}, '/api/registerUser'); }
@@ -17,7 +17,7 @@ class Backend {
         return fetch(`${config.server}${endpoint}`, {
             method: 'POST',
             headers: {
-            Accept: 'application/json',
+                Accept: 'application/json',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(params)
