@@ -22,7 +22,7 @@ export default class SignUpScreen extends React.Component {
         backend.registerUser(email, pw_hash)
             .then(res => handleResponse(this, res))
             .then(() => backend.requestSessionToken(email, pw_hash))
-            .then(res => handleResponse(this, res, res.data.token))
+            .then(res => handleResponse(this, res, res.data ? res.data.token : undefined))
             .then(token => AsyncStorage.multiSet(_.toPairs({email, token})))
             .then(() => this.props.navigation.navigate('App'))
             .catch(console.log);

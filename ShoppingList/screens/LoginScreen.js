@@ -35,10 +35,7 @@ export default class LoginScreen extends React.Component {
                 }
                 return res.data.token;
             })
-            .then(token => AsyncStorage.multiSet(_.toPairs({
-                email: email,
-                token,
-            })))
+            .then(token => AsyncStorage.multiSet(_.toPairs({ email, token })))
             .then(() => this.props.navigation.navigate('ListViewer'))
             .catch(console.log);
     }

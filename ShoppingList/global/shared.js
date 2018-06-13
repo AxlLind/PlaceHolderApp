@@ -9,18 +9,14 @@ const primaryButton = (title, onPress) => (
         style={{color: colors.background}}
         containerStyle={styles.button}
         onPress={onPress}
-    >
-        {title}
-    </Button>
+    >{title}</Button>
 );
 
 const secondaryButton = (title, onPress) => (
     <Button
         style={{color: '#ffffff', fontSize: 14}}
         onPress={onPress}
-    >
-        {title}
-    </Button>
+    >{title}</Button>
 );
 
 const handleResponse = (screen, res, val) => {

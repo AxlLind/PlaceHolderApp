@@ -25,7 +25,7 @@ export default class ListScreen extends React.Component {
     populateItems() {
         const {email, token, list_id} = this.state;
         return backend.getListItems(email, token, list_id)
-            .then(res => handleResponse(this, res, res.data.items))
+            .then(res => handleResponse(this, res, res.data ? res.data.items : undefined))
             .then(items => this.setState({ items, gotItems: true }))
             .catch(console.log);
     }
