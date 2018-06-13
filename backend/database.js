@@ -8,14 +8,12 @@ const knex   = require('knex')({
 class Database {
     checkEmail(email) {
         return knex('users')
-            .select('*')
             .where({ email })
             .then(rows => !_.isEmpty(rows));
     }
 
     checkUserOwnsList(email, list_id) {
         return knex('users')
-            .select('*')
             .join('lists', 'users.user_id', '=', 'lists.user_id')
             .where({ email, list_id })
             .then(rows => !_.isEmpty(rows));
@@ -23,15 +21,13 @@ class Database {
 
     checkItemAlreadyInList(list_id, item) {
         return knex('listitems')
-            .select('*')
             .where({ list_id, item })
             .then(rows => !_.isEmpty(rows));
     }
 
     createUser(email, pw_hash) {
-        const date_created = new Date();
         return knex('users')
-            .insert({ email, pw_hash, date_created });
+            .insert({ email, pw_hash, date_created: _.now() });
     }
 
     createList(list_name, email) {
@@ -43,24 +39,20 @@ class Database {
                 .insert({
                     list_name,
                     user_id,
-                    date_created: new Date(),
+                    date_created: _.now(),
                 })
             );
     }
 
     getUser(email) {
         return knex('users')
-            .select('*')
             .where({ email })
             .then(rows => _.isEmpty(rows) ? {} : rows[0]);
     }
 
     addItemToList(list_id, item) {
         return knex('listitems')
-            .insert({
-                list_id,
-                item,
-            });
+            .insert({ list_id, item });
     }
 
     getUsersLists(email) {
@@ -86,9 +78,11 @@ class Database {
     }
 
     deleteList(list_id) {
-        return knex('sharedlists')
-            .where({ list_id })
-            .del()
+        return Promise.resolve()
+            .then(() => knex('sharedlists')
+                .where({ list_id })
+                .del()
+            )
             .then(() => knex('listitems')
                 .where({ list_id })
                 .del()

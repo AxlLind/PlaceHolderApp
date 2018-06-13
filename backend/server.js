@@ -8,25 +8,23 @@ const sessionHandler = require('./sessionhandler.js');
 const app            = express();
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded());
 
-const verifyProperties = (req, res, properties) => {
-    for (let prop in properties) {
-        if (_.has(req.body, prop))
-            continue;
+const verifyProperties = (properties, req, res, next) => {
+    const verified = _.every(properties, prop => _.has(req.body, prop));
+    if (!verified)
         Response.missingParam(res, prop);
-        return false;
-    }
-    return true;
+    return verified;
 }
 
-const validateUser = (req, res, next) => {
-    if (!verifyProperties(req, res, {
-        token: 'Token not supplied',
-        email: 'Email not supplied'
-    })) return;
+const requireProps = (...args) => _.curry(verifyProperties)(args);
 
-    if (!sessionHandler.validate(req.body.token, req.body.email))
+const validateUser = (req, res, next) => {
+    if (!verifyProperties(['email', 'token'], req, res))
+        return;
+
+    const {token, email} = req.body;
+    if (!sessionHandler.validate(token, email))
         return Response.invalidAuth(res);
     next();
 }
@@ -52,12 +50,11 @@ app.post('/api/getSharedLists', validateUser, (req, res) => {
 });
 
 app.post('/api/requestSessionToken', (req, res) => {
-    if (!verifyProperties(req, res, {
-        email: 'Email not supplied',
-        pw_hash: 'Password hash not supplied'
-    })) return;
+    if (!verifyProperties(['email', 'pw_hash'], req, res))
+        return;
 
-    db.getUser(req.body.email)
+    const {email, pw_hash} = req.body;
+    db.getUser(email)
         .then(user => {
             if (_.isEmpty(user)) {
                 Response.invalidParam(res, 'email');
@@ -65,7 +62,7 @@ app.post('/api/requestSessionToken', (req, res) => {
             }
             return user;
         })
-        .then(user => bcrypt.compare(req.body.pw_hash, user.pw_hash))
+        .then(user => bcrypt.compare(pw_hash, user.pw_hash))
         .then(validated => {
             if (!validated) {
                 Response.invalidAuth(res);
@@ -73,34 +70,34 @@ app.post('/api/requestSessionToken', (req, res) => {
             }
         })
         .then(() => Response.success(res, 'Session validated', {
-                token: sessionHandler.addToken(req.body.email),
+                token: sessionHandler.addToken(email),
             })
         );
 });
 
 app.post('/api/registerUser', (req, res) => {
-    if (!verifyProperties(req, res, {
-        email: 'Email not supplied',
-        pw_hash: 'Password hash not supplied'
-    })) return;
-    if (!/.+@.+\..+/.test(req.body.email)) // ensure it is 'sort of' an email
-        return Response.invalidParam(res, 'email');
-    db.checkEmail(req.body.email)
+    if (!verifyProperties(['email', 'pw_hash'], req, res))
+        return;
+
+    const {email, pw_hash} = req.body;
+    if (!/.+@.+\..+/.test(email)) // ensure it is 'sort of' an email
+        return Response.invalidParam(res, 'Does not match an email');
+
+    db.checkEmail(email)
         .then(exists => {
             if (exists) {
-                Response.invalidParam(res, 'email');
+                Response.invalidParam(res, 'Email already taken');
                 return Promise.reject('Invalid email');
             }
         })
-        .then(() => bcrypt.hash(req.body.pw_hash, config.saltRounds))
-        .then(hash => db.createUser(req.body.email, hash))
+        .then(() => bcrypt.hash(pw_hash, config.saltRounds))
+        .then(hash => db.createUser(email, hash))
         .then(() => Response.success(res, 'User created'));
 });
 
 app.post('/api/createList', validateUser, (req, res) => {
-    if (!verifyProperties(req, res, {
-        list_name: 'No list name supplied'
-    })) return;
+    if (!verifyProperties(['list_name'], req, res))
+        return;
 
     db.createList(req.body.list_name, req.body.email)
         .then(() => Response.success(res, 'List created'))
@@ -108,75 +105,73 @@ app.post('/api/createList', validateUser, (req, res) => {
 });
 
 app.post('/api/addItemToList', validateUser, (req, res) => {
-    if (!verifyProperties(req, res, {
-        list_id: 'No list name supplied',
-        item: 'No item supplied'
-    })) return;
+    if (!verifyProperties(['list_id', 'item'], req, res))
+        return;
 
-    db.checkUserOwnsList(req.body.email, req.body.list_id)
+    const {email, list_id, item} = req.body;
+    db.checkUserOwnsList(email, list_id)
         .then(ownsList => {
             if (!ownsList) {
-                Response.invalidParam(res, 'list_id');
+                Response.invalidParam(res, 'You do not own that list');
                 return Promise.reject('Accessing list you do not own');
             }
         })
-        .then(() => db.checkItemAlreadyInList(req.body.list_id, req.body.item))
+        .then(() => db.checkItemAlreadyInList(list_id, item))
         .then(inList => {
             if (inList) {
-                Response.invalidParam(res, 'item');
+                Response.invalidParam(res, 'Item already in list');
                 return Promise.reject('Item already in list');
             }
         })
-        .then(() => db.addItemToList(req.body.list_id, req.body.item))
+        .then(() => db.addItemToList(list_id, item))
         .then(() => Response.success(res, 'Item added'));
 });
 
 app.post('/api/getListItems', validateUser, (req, res) => {
-    if (!verifyProperties(req, res, {
-        list_id: 'No list id supplied'
-    })) return;
+    if (!verifyProperties(['list_id'], req, res))
+        return;
 
-    db.checkUserOwnsList(req.body.email, req.body.list_id)
+    const {email, list_id} = req.body;
+    db.checkUserOwnsList(email, list_id)
         .then(ownsList => {
             if (!ownsList) {
-                Response.invalidParam(res, 'list_id');
+                Response.invalidParam(res, 'You do not own that list');
                 return Promise.reject('Accessing list you do not own');
             }
         })
-        .then(() => db.getListItems(req.body.list_id))
+        .then(() => db.getListItems(list_id))
         .then(items => Response.success(res, 'Items served', { items }));
 });
 
 app.post('/api/deleteList', validateUser, (req, res) => {
-    if (!verifyProperties(req, res, {
-        list_id: 'No list id supplied'
-    })) return;
+    if (!verifyProperties(['list_id'], req, res))
+        return;
 
-    db.checkUserOwnsList(req.body.email, req.body.list_id)
+    const {email, list_id} = req.body;
+    db.checkUserOwnsList(email, list_id)
         .then(ownsList => {
             if (!ownsList) {
-                Response.invalidParam(res, 'list_id');
+                Response.invalidParam(res, 'You do not own that list');
                 return Promise.reject('Accessing list you do not own');
             }
         })
-        .then(() => db.deleteList(req.body.list_id))
+        .then(() => db.deleteList(list_id))
         .then(() => Response.success(res, 'List deleted'))
 });
 
 app.post('/api/deleteItemFromList', validateUser, (req, res) => {
-    if (!verifyProperties(req, res, {
-        list_id: 'No list id supplied',
-        item: 'No item supplied',
-    })) return;
+    if (!verifyProperties(['list_id', 'item'], req, res))
+        return;
 
-    db.checkUserOwnsList(req.body.email, req.body.list_id)
+    const {email, list_id, item} = req.body;
+    db.checkUserOwnsList(email, list_id)
         .then(ownsList => {
             if (!ownsList) {
-                Response.invalidParam(res, 'list_id');
+                Response.invalidParam(res, 'You do not own that list');
                 return Promise.reject('Accessing list you do not own');
             }
         })
-        .then(() => db.deleteItemFromList(req.body.list_id, req.body.item))
+        .then(() => db.deleteItemFromList(list_id, item))
         .then(() => Response.success(res, 'Item deleted'));
 })
 

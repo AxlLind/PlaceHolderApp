@@ -1,3 +1,5 @@
+const _ = require('lodash');
+
 const codes = {
     success: 0,
     server: 1,
@@ -8,35 +10,21 @@ const codes = {
 };
 
 class Response {
-    success(res, message, data) {
-        return this.createResponse(res, message, 200, codes.success, data);
-    }
+    success = (res, msg, data) => this.response(res, msg, 200, codes.success, data);
 
-    invalidParam(res, param) {
-        return this.createResponse(res, `Invalid parameter: ${param}`, 400, codes.invalidParam);
-    }
+    invalidParam = (res, reason) => this.response(res, reason, 400, codes.invalidParam);
 
-    missingParam(res, param) {
-        return this.createResponse(res, `Missing parameter ${param}`, 400, codes.missingParam);
-    }
+    missingParam = (res, param) => this.response(res, `Missing parameter ${param}`, 400, codes.missingParam);
 
-    invalidAuth(res) {
-        return this.createResponse(res, 'Invalid authentication', 401, codes.invalidAuth);
-    }
+    invalidAuth = res => this.response(res, 'Invalid authentication', 401, codes.invalidAuth);
 
-    serverError(res) {
-        return this.createResponse(res, 'Internal server error', 500, codes.server);
-    }
+    invalidEndpoint = res => this.response(res, 'Not a valid API-endpoint', 404, codes.invalidEndpoint);
 
-    invalidEndpoint(res) {
-        return this.createResponse(res, 'Not a valid API-endpoint', 404, codes.invalidEndpoint);
-    }
+    serverError = res => this.response(res, 'Internal server error', 500, codes.server);
 
-    createResponse(res, message, status, code, data) {
-        const obj = { status, code, message };
-        if (data)
-            obj.data = data;
-        return res.status(status).send(obj);
+    response(res, message, status, code, data) {
+        const response = _.omitBy({ status, code, message, data }, _.isUndefined);
+        return res.status(status).send(response);
     }
 }
 
