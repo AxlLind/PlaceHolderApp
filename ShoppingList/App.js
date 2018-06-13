@@ -1,32 +1,40 @@
 import React from 'react';
 import { createSwitchNavigator, createStackNavigator } from 'react-navigation';
-import LoginPage from './pages/LoginPage.js';
-import SignUpPage from './pages/SignUpPage.js';
-import ListViewerPage from './pages/ListViewerPage.js';
-import ListPage from './pages/ListPage.js';
-import AuthLoadingPage from './pages/AuthLoadingPage.js';
+import { colors } from './global/constants.js';
+import LoginScreen from './screens/LoginScreen.js';
+import SignUpScreen from './screens/SignUpScreen.js';
+import ListViewerScreen from './screens/ListViewerScreen.js';
+import ListScreen from './screens/ListScreen.js';
+import AuthLoadingScreen from './screens/AuthLoadingScreen.js';
+
+const navStyle = {
+    navigationOptions: {
+        headerStyle: {
+            backgroundColor: colors.text,
+        },
+        headerTitleStyle: {
+            color: colors.background,
+        }
+    }
+}
 
 const AppStack = createStackNavigator({
-    ListViewer: ListViewerPage,
-    List: ListPage,
-});
+        ListViewer: ListViewerScreen,
+        List: ListScreen,
+    }, navStyle
+);
 
 const AuthStack = createStackNavigator({
-    Login: LoginPage,
-    SignUp: SignUpPage,
-})
+        Login: LoginScreen,
+        SignUp: SignUpScreen,
+    }, navStyle
+);
 
 export default createSwitchNavigator({
-        AuthLoading: AuthLoadingPage,
+        AuthLoading: AuthLoadingScreen,
         App: AppStack,
         Auth: AuthStack,
     }, {
         initialRouteName: 'AuthLoading',
-        headerStyle: {
-            backgroundColor: '#aaccff',
-        },
-        headerTitleStyle: {
-            color: '#222233',
-        }
     }
 );
