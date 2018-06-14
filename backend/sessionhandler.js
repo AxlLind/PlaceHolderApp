@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const randomstring = require('randomstring');
 const config = require('./config.js');
 
@@ -9,10 +10,10 @@ class SessionHandler {
     }
 
     validate(token, email) {
-        return this.tokens[token] === email;
+        return _.isEqual(this.tokens[token], email);
     }
 
-    request(email) {
+    requestToken(email) {
         const token = randomstring.generate();
         this.tokens[token] = email;
         setTimeout(() => this.removeToken(token), config.sessionTime);

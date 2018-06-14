@@ -25,7 +25,7 @@ export default class ListViewerScreen extends React.Component {
 
     populateLists() {
         return backend.getLists(this.state.email, this.state.token)
-            .then(res => handleResponse(this, res, res.data ? res.data.lists : undefined))
+            .then(res => handleResponse(this, res, _.get(res, 'data.lists')))
             .then(lists => this.setState({ lists, gotLists: true }));
     }
 

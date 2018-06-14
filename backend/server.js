@@ -35,11 +35,10 @@ const requireProps = (...args) => _.curry(verifyProperties)(args);
  * @param {object} res express response object
  */
 const catchUnhandledErr = (err, res) => {
-    if (_.isEqual(err.message, config.errHandled))
+    if (_.isEqual(err, config.errHandled))
         return;
+    console.error(`Internal server error!\n${err}`);
     Response.serverError(res);
-    console.error('Internal server error!');
-    console.error(err.message);
 };
 
 /**

@@ -11,23 +11,28 @@ const codes = {
 
 class Response {
     success(res, message, data) {
+        console.log(`Success: ${message}`);
         return this.response(res, 200, message, codes.success, data);
     }
 
     invalidParam(res, reason) {
+        console.log(`Response: invalid param - ${reason}`);
         return this.response(res, 400, reason, codes.invalidParam);
     }
 
     missingParam(res, param) {
+        console.log(`Response: missing param - ${param}`);
         return this.response(res, 400, `Missing parameter '${param}'`, codes.missingParam);
     }
 
     invalidAuth(res) {
+        console.log('Response: invalid authentication');
         return this.response(res, 401, 'Invalid authentication', codes.invalidAuth);
     }
 
     invalidEndpoint(res) {
-        return this.response(res, 404, 'Not a valid API-endpoint', codes.invalidEndpoint);
+        console.log('Response: invalid API-endpoint');
+        return this.response(res, 404, 'Invalid API-endpoint', codes.invalidEndpoint);
     }
 
     serverError(res) {

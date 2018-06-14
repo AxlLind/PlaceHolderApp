@@ -26,4 +26,4 @@ class Backend {
 
 }
 
-export default new Backend() ;
+export default new Backend();
