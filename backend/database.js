@@ -6,6 +6,9 @@ const knex   = require('knex')({
 });
 
 class Database {
+
+    /* CHECKS */
+
     checkEmail(email) {
         return knex('users')
             .where({ email })
@@ -25,34 +28,12 @@ class Database {
             .then(rows => !_.isEmpty(rows));
     }
 
-    createUser(email, pw_hash) {
-        return knex('users')
-            .insert({ email, pw_hash, date_created: _.now() });
-    }
-
-    createList(list_name, email) {
-        return knex('users')
-            .select('user_id')
-            .where({ email })
-            .then(rows => rows[0].user_id)
-            .then(user_id => knex('lists')
-                .insert({
-                    list_name,
-                    user_id,
-                    date_created: _.now(),
-                })
-            );
-    }
+    /* GETTERS */
 
     getUser(email) {
         return knex('users')
             .where({ email })
             .then(rows => _.isEmpty(rows) ? {} : rows[0]);
-    }
-
-    addItemToList(list_id, item) {
-        return knex('listitems')
-            .insert({ list_id, item });
     }
 
     getUsersLists(email) {
@@ -76,6 +57,30 @@ class Database {
             .where({ list_id })
             .then(rows => _.map(rows, 'item'));
     }
+
+    /* CREATORS */
+
+    createUser(email, pw_hash) {
+        return knex('users')
+            .insert({ email, pw_hash });
+    }
+
+    createList(list_name, email) {
+        return knex('users')
+            .select('user_id')
+            .where({ email })
+            .then(rows => rows[0].user_id)
+            .then(user_id => knex('lists')
+                .insert({ list_name, user_id })
+            );
+    }
+
+    addItemToList(list_id, item) {
+        return knex('listitems')
+            .insert({ list_id, item });
+    }
+
+    /* DELETERS */
 
     deleteList(list_id) {
         return Promise.resolve()
