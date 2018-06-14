@@ -8,22 +8,49 @@ const sessionHandler = require('./sessionhandler.js');
 const app            = express();
 
 app.use(express.json());
-app.use(express.urlencoded());
+app.use(express.urlencoded({extended: false}));
 
+/**
+ * Middleware that verifies that req.body has the given properties.
+ * @param {[string]} properties properties to verify
+ */
 const verifyProperties = (properties, req, res, next) => {
-    const verified = _.every(properties, prop => _.has(req.body, prop));
-    if (!verified)
-        Response.missingParam(res, prop);
-    return verified;
+    const missingProp = _.find(properties, prop => !_.has(req.body, prop));
+    if (missingProp)
+        return Response.missingParam(res, missingProp);
+    next();
 }
 
+/**
+ * Returns a middleware function that verifies
+ * that the arguments are properties of req.body
+ * @param {string} args properties to verify
+ */
 const requireProps = (...args) => _.curry(verifyProperties)(args);
 
-const validateUser = (req, res, next) => {
-    if (!verifyProperties(['email', 'token'], req, res))
+/**
+ * Handles unhandled errors in a response.
+ * This would be an internal server error (e.g DB is down)
+ * @param {object} err from Promise.catch
+ * @param {object} res express response object
+ */
+const catchUnhandledErr = (err, res) => {
+    if (_.isEqual(err.message, config.errHandled))
         return;
+    Response.serverError(res);
+    console.error('Internal server error!');
+    console.error(err.message);
+};
 
-    const {token, email} = req.body;
+/**
+ * Express middleware. Passes forward if the supplied token is valid.
+ * Otherwise sends an invalidAuth response.
+ */
+const validateUser = (req, res, next) => {
+    const missingProp = _.find(['email', 'token'], prop => !_.has(req.body, prop));
+    if (missingProp)
+        return Response.missingParam(res, missingProp);
+    const { email, token } = req.body;
     if (!sessionHandler.validate(token, email))
         return Response.invalidAuth(res);
     next();
@@ -40,25 +67,22 @@ app.post('/api/testSessionToken', validateUser, (req, res) =>
 app.post('/api/getLists', validateUser, (req, res) => {
     db.getUsersLists(req.body.email)
         .then(lists => Response.success(res, 'Serving lists', { lists }))
-        .catch(() => Response.serverError(res));
+        .catch(err => catchUnhandledErr(err, res));
 });
 
 app.post('/api/getSharedLists', validateUser, (req, res) => {
     db.getUsersSharedLists(req.body.email)
         .then(lists => Response.success(res, 'Serving shared lists', { lists }))
-        .catch(() => Response.serverError(res));
+        .catch(err => catchUnhandledErr(err, res));
 });
 
-app.post('/api/requestSessionToken', (req, res) => {
-    if (!verifyProperties(['email', 'pw_hash'], req, res))
-        return;
-
-    const {email, pw_hash} = req.body;
+app.post('/api/requestSessionToken', requireProps('email', 'pw_hash'), (req, res) => {
+    const { email, pw_hash } = req.body;
     db.getUser(email)
         .then(user => {
             if (_.isEmpty(user)) {
                 Response.invalidParam(res, 'email');
-                return Promise.reject('Invalid email');
+                return Promise.reject(config.errHandled);
             }
             return user;
         })
@@ -66,113 +90,101 @@ app.post('/api/requestSessionToken', (req, res) => {
         .then(validated => {
             if (!validated) {
                 Response.invalidAuth(res);
-                return Promise.reject('Invalid password');
+                return Promise.reject(config.errHandled);
             }
         })
         .then(() => Response.success(res, 'Session validated', {
-                token: sessionHandler.addToken(email),
+                token: sessionHandler.requestToken(email),
             })
-        );
+        )
+        .catch(err => catchUnhandledErr(err, res));
 });
 
-app.post('/api/registerUser', (req, res) => {
-    if (!verifyProperties(['email', 'pw_hash'], req, res))
-        return;
-
-    const {email, pw_hash} = req.body;
+app.post('/api/registerUser', requireProps('email', 'pw_hash'), (req, res) => {
+    const { email, pw_hash } = req.body;
     if (!/.+@.+\..+/.test(email)) // ensure it is 'sort of' an email
         return Response.invalidParam(res, 'Does not match an email');
-
     db.checkEmail(email)
         .then(exists => {
             if (exists) {
                 Response.invalidParam(res, 'Email already taken');
-                return Promise.reject('Invalid email');
+                return Promise.reject(config.errHandled);
             }
         })
         .then(() => bcrypt.hash(pw_hash, config.saltRounds))
         .then(hash => db.createUser(email, hash))
-        .then(() => Response.success(res, 'User created'));
+        .then(() => Response.success(res, 'User created'))
+        .catch(err => catchUnhandledErr(err, res));
 });
 
-app.post('/api/createList', validateUser, (req, res) => {
-    if (!verifyProperties(['list_name'], req, res))
-        return;
-
-    db.createList(req.body.list_name, req.body.email)
+app.post('/api/createList', validateUser, requireProps('list_name'), (req, res) => {
+    const { email, list_name } = req.body;
+    db.createList(list_name, email)
         .then(() => Response.success(res, 'List created'))
-        .catch(() => Response.serverError(res));
+        .catch(err => catchUnhandledErr(err, res));
 });
 
-app.post('/api/addItemToList', validateUser, (req, res) => {
-    if (!verifyProperties(['list_id', 'item'], req, res))
-        return;
-
-    const {email, list_id, item} = req.body;
+app.post('/api/addItemToList', validateUser, requireProps('list_id', 'item'), (req, res) => {
+    const { email, list_id, item } = req.body;
     db.checkUserOwnsList(email, list_id)
         .then(ownsList => {
             if (!ownsList) {
                 Response.invalidParam(res, 'You do not own that list');
-                return Promise.reject('Accessing list you do not own');
+                return Promise.reject(config.errHandled);
             }
         })
-        .then(() => db.checkItemAlreadyInList(list_id, item))
+        .then(() => db.checkItemInList(list_id, item))
         .then(inList => {
             if (inList) {
                 Response.invalidParam(res, 'Item already in list');
-                return Promise.reject('Item already in list');
+                return Promise.reject(config.errHandled);
             }
         })
         .then(() => db.addItemToList(list_id, item))
-        .then(() => Response.success(res, 'Item added'));
+        .then(() => Response.success(res, 'Item added'))
+        .catch(err => catchUnhandledErr(err, res));
 });
 
-app.post('/api/getListItems', validateUser, (req, res) => {
-    if (!verifyProperties(['list_id'], req, res))
-        return;
-
-    const {email, list_id} = req.body;
+app.post('/api/getListItems', validateUser, requireProps('list_id'), (req, res) => {
+    const { email, list_id } = req.body;
     db.checkUserOwnsList(email, list_id)
         .then(ownsList => {
             if (!ownsList) {
                 Response.invalidParam(res, 'You do not own that list');
-                return Promise.reject('Accessing list you do not own');
+                return Promise.reject(config.errHandled);
             }
         })
         .then(() => db.getListItems(list_id))
-        .then(items => Response.success(res, 'Items served', { items }));
+        .then(items => Response.success(res, 'Items served', { items }))
+        .catch(err => catchUnhandledErr(err, res));
 });
 
-app.post('/api/deleteList', validateUser, (req, res) => {
-    if (!verifyProperties(['list_id'], req, res))
-        return;
-
-    const {email, list_id} = req.body;
+app.post('/api/deleteList', validateUser, requireProps('list_id'), (req, res) => {
+    const { email, list_id } = req.body;
     db.checkUserOwnsList(email, list_id)
         .then(ownsList => {
             if (!ownsList) {
                 Response.invalidParam(res, 'You do not own that list');
-                return Promise.reject('Accessing list you do not own');
+                return Promise.reject(config.errHandled);
             }
         })
         .then(() => db.deleteList(list_id))
         .then(() => Response.success(res, 'List deleted'))
+        .catch(err => catchUnhandledErr(err, res));
 });
 
-app.post('/api/deleteItemFromList', validateUser, (req, res) => {
-    if (!verifyProperties(['list_id', 'item'], req, res))
-        return;
-
-    const {email, list_id, item} = req.body;
+app.post('/api/deleteItemFromList', validateUser, requireProps('list_id', 'item'), (req, res) => {
+    const { email, list_id, item } = req.body;
     db.checkUserOwnsList(email, list_id)
         .then(ownsList => {
             if (!ownsList) {
                 Response.invalidParam(res, 'You do not own that list');
-                return Promise.reject('Accessing list you do not own');
+                return Promise.reject(config.errHandled);
             }
         })
         .then(() => db.deleteItemFromList(list_id, item))
-        .then(() => Response.success(res, 'Item deleted'));
+        .then(() => Response.success(res, 'Item deleted'))
+        .catch(err => catchUnhandledErr(err, res));
 })
 
 // Redirects any unspecified paths here, simply return an error
@@ -180,5 +192,5 @@ app.get('*', (req, res) => Response.invalidEndpoint(res));
 app.post('*', (req, res) => Response.invalidEndpoint(res));
 
 app.listen(config.port, '0.0.0.0', () => {
-    console.log(`Server up! Listening on: localhost:${config.port}`);
+    console.log(`Server up! Listening on port ${config.port}`);
 });

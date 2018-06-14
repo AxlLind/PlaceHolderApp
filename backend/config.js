@@ -7,5 +7,6 @@ module.exports = {
         host: 'localhost',
         user: 'postgres',
         database: 'shopping_list',
-    }
+    },
+    errHandled: 'errHandled',
 }

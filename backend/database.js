@@ -19,7 +19,7 @@ class Database {
             .then(rows => !_.isEmpty(rows));
     }
 
-    checkItemAlreadyInList(list_id, item) {
+    checkItemInList(list_id, item) {
         return knex('listitems')
             .where({ list_id, item })
             .then(rows => !_.isEmpty(rows));
@@ -64,7 +64,7 @@ class Database {
 
     getUsersSharedLists(email) {
         return knex('users')
-            .select('lists.list_id', 'list_name', 'date_created')
+            .select('lists.list_id', 'lists.list_name', 'lists.date_created')
             .join('sharedlists', 'users.user_id', '=', 'sharedlists.user_id')
             .join('lists', 'sharedlists.list_id', '=', 'lists.list_id')
             .where({ email });

@@ -12,7 +12,7 @@ class SessionHandler {
         return this.tokens[token] === email;
     }
 
-    addToken(email) {
+    request(email) {
         const token = randomstring.generate();
         this.tokens[token] = email;
         setTimeout(() => this.removeToken(token), config.sessionTime);

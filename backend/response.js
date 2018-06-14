@@ -10,20 +10,32 @@ const codes = {
 };
 
 class Response {
-    success = (res, msg, data) => this.response(res, msg, 200, codes.success, data);
+    success(res, message, data) {
+        return this.response(res, 200, message, codes.success, data);
+    }
 
-    invalidParam = (res, reason) => this.response(res, reason, 400, codes.invalidParam);
+    invalidParam(res, reason) {
+        return this.response(res, 400, reason, codes.invalidParam);
+    }
 
-    missingParam = (res, param) => this.response(res, `Missing parameter ${param}`, 400, codes.missingParam);
+    missingParam(res, param) {
+        return this.response(res, 400, `Missing parameter '${param}'`, codes.missingParam);
+    }
 
-    invalidAuth = res => this.response(res, 'Invalid authentication', 401, codes.invalidAuth);
+    invalidAuth(res) {
+        return this.response(res, 401, 'Invalid authentication', codes.invalidAuth);
+    }
 
-    invalidEndpoint = res => this.response(res, 'Not a valid API-endpoint', 404, codes.invalidEndpoint);
+    invalidEndpoint(res) {
+        return this.response(res, 404, 'Not a valid API-endpoint', codes.invalidEndpoint);
+    }
 
-    serverError = res => this.response(res, 'Internal server error', 500, codes.server);
+    serverError(res) {
+        return this.response(res, 500, 'Internal server error', codes.server);
+    }
 
-    response(res, message, status, code, data) {
-        const response = _.omitBy({ status, code, message, data }, _.isUndefined);
+    response(res, status, message, code, data) {
+        const response = _.omitBy({ message, code, data }, _.isUndefined);
         return res.status(status).send(response);
     }
 }
