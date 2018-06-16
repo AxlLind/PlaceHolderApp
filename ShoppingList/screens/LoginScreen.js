@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TextInput, Text, AsyncStorage } from 'react-native';
 import _ from 'lodash';
-import { codes } from './../global/config.js';
+import { config, codes } from './../global/config.js';
 import styles from './../styles.js';
 import backend from './../global/backend.js';
 import { primaryButton, secondaryButton } from './../global/shared.js';
@@ -13,7 +13,7 @@ export default class LoginScreen extends React.Component {
     constructor() {
         super();
         this.state = {
-            text: '',
+            errText: ' ',
             email: '',
             pw: '',
         };
@@ -29,20 +29,21 @@ export default class LoginScreen extends React.Component {
         const {email, pw} = this.state;
         backend.requestSessionToken(email, sha256(pw))
             .then(res => {
-                if (res.code !== codes.success) {
-                    setTimeout(() => this.setState({ text: '' }), 1000);
-                    return this.setState({ text: res.message });
-                }
+                if (res.code !== codes.success)
+                    return Promise.reject(res.message);
                 return res.data.token;
             })
             .then(token => AsyncStorage.multiSet(_.toPairs({ email, token })))
             .then(() => this.props.navigation.navigate('ListViewer'))
-            .catch(console.log);
+            .catch(message => {
+                setTimeout(() => this.setState({ errText: ' ' }), config.errUptime);
+                this.setState({ errText: message });
+            });
     }
 
     render = () => (
         <View style={styles.container}>
-            <Text style={styles.text}>{this.state.text}</Text>
+            <Text style={styles.errText}>{this.state.errText}</Text>
             <TextInput style={styles.textInput}
                 underlineColorAndroid='transparent'
                 placeholder='Email'
@@ -50,7 +51,7 @@ export default class LoginScreen extends React.Component {
                 value={this.state.email}
                 onSubmitEditing={() => this.login()}
                 onChangeText={email => this.setState({email})}
-                />
+            />
             <TextInput style={styles.textInput}
                 underlineColorAndroid='transparent'
                 placeholder='Password'

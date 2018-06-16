@@ -80,7 +80,7 @@ app.post('/api/requestSessionToken', requireProps('email', 'pw_hash'), (req, res
     db.getUser(email)
         .then(user => {
             if (_.isEmpty(user)) {
-                Response.invalidParam(res, 'email');
+                Response.invalidParam(res, 'Unregistered Email');
                 return Promise.reject(config.errHandled);
             }
             return user;
@@ -92,10 +92,8 @@ app.post('/api/requestSessionToken', requireProps('email', 'pw_hash'), (req, res
                 return Promise.reject(config.errHandled);
             }
         })
-        .then(() => Response.success(res, 'Session validated', {
-                token: sessionHandler.requestToken(email),
-            })
-        )
+        .then(() => sessionHandler.requestToken(email))
+        .then(token => Response.success(res, 'Session validated', { token }))
         .catch(err => catchUnhandledErr(err, res));
 });
 

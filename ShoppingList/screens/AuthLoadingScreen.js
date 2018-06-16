@@ -2,20 +2,23 @@ import React from 'react';
 import { View, AsyncStorage, ActivityIndicator } from 'react-native';
 import _ from 'lodash';
 import { colors } from './../global/constants.js';
+import { codes } from './../global/config.js';
 import backend from './../global/backend.js';
 import styles from './../styles.js';
-import { handleResponse } from '../global/shared.js';
 
 export default class AuthLoadingScreen extends React.Component {
-    static navigationOptions = { title: 'Loading', headerMode: 'none' };
+    static navigationOptions = { headerMode: 'none' };
 
     componentDidMount() {
         AsyncStorage.multiGet(['email', 'token'])
             .then(keyPairs => _.fromPairs(keyPairs))
             .then(({email, token}) => backend.testSessionToken(email, token))
-            .then(res => handleResponse(this, res))
+            .then(res => {
+                if (!_.isEqual(res.code, codes.success))
+                    return Promise.reject();
+            })
             .then(() => this.props.navigation.navigate('App'))
-            .catch(console.log);
+            .catch(() => this.props.navigation.navigate('Auth'));
     }
 
     render = () => (

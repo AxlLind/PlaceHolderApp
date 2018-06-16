@@ -14,6 +14,11 @@ export default StyleSheet.create({
         padding: 5,
         fontSize: 20,
     },
+    errText: {
+        color: colors.errText,
+        padding: 5,
+        fontSize: 20,
+    },
     textInput: {
         color: colors.text,
         fontSize: 20,

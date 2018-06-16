@@ -40,7 +40,8 @@ export default class ListScreen extends React.Component {
     }
 
     addItem() {
-        backend.addItemToList(this.state.email, this.state.token, this.state.list_id, this.state.addItemName)
+        const { email, token, list_id, addItemName } = this.state;
+        backend.addItemToList(email, token, list_id, addItemName)
             .then(res => handleResponse(this, res))
             .then(() => this.setState({
                 showAddItem: false,

@@ -1,12 +1,12 @@
-import { config } from './config.js'
+import { config, codes } from './config.js'
 
 class Backend {
     version()                                       { return this.postReq({}, '/version'); }
+    registerUser(email, pw_hash)                    { return this.postReq({email, pw_hash}, '/api/registerUser'); }
+    requestSessionToken(email, pw_hash)             { return this.postReq({email, pw_hash}, '/api/requestSessionToken'); }
     getLists(email, token)                          { return this.postReq({email, token}, '/api/getLists'); }
     getSharedLists(email, token)                    { return this.postReq({email, token}, '/api/getSharedLists'); }
-    registerUser(email, pw_hash)                    { return this.postReq({email, pw_hash}, '/api/registerUser'); }
     testSessionToken(email, token)                  { return this.postReq({email, token}, '/api/testSessionToken'); }
-    requestSessionToken(email, pw_hash)             { return this.postReq({email, pw_hash}, '/api/requestSessionToken'); }
     getListItems(email, token, list_id)             { return this.postReq({email, token, list_id}, '/api/getListItems'); }
     deleteList(email, token, list_id)               { return this.postReq({email, token, list_id}, '/api/deleteList'); }
     createList(email, token, list_name)             { return this.postReq({email, token, list_name}, '/api/createList'); }
@@ -21,7 +21,12 @@ class Backend {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(params)
-        }).then(res => res.json());
+        })
+        .then(res => res.json())
+        .catch(err => Promise.resolve({
+            code: codes.fetchErr,
+            message: err.message,
+        }));
     }
 
 }

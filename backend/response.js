@@ -16,22 +16,22 @@ class Response {
     }
 
     invalidParam(res, reason) {
-        console.log(`Response: invalid param - ${reason}`);
+        console.log(`Response: Invalid param - ${reason}`);
         return this.response(res, 400, reason, codes.invalidParam);
     }
 
     missingParam(res, param) {
-        console.log(`Response: missing param - ${param}`);
+        console.log(`Response: Missing param - ${param}`);
         return this.response(res, 400, `Missing parameter '${param}'`, codes.missingParam);
     }
 
     invalidAuth(res) {
-        console.log('Response: invalid authentication');
+        console.log('Response: Invalid authentication');
         return this.response(res, 401, 'Invalid authentication', codes.invalidAuth);
     }
 
     invalidEndpoint(res) {
-        console.log('Response: invalid API-endpoint');
+        console.log('Response: Invalid API-endpoint');
         return this.response(res, 404, 'Invalid API-endpoint', codes.invalidEndpoint);
     }
 
