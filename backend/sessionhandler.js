@@ -1,3 +1,4 @@
+'use strict';
 const _ = require('lodash');
 const randomstring = require('randomstring');
 const config = require('./config.js');
@@ -9,7 +10,7 @@ class SessionHandler {
         };
     }
 
-    validate(token, email) {
+    validate(email, token) {
         return _.isEqual(this.tokens[token], email);
     }
 

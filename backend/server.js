@@ -1,3 +1,4 @@
+'use strict';
 const _              = require('lodash');
 const express        = require('express');
 const bcrypt         = require('bcrypt');
@@ -57,7 +58,7 @@ const validateUser = (req, res, next) => {
                 Response.invalidParam(res, 'Email not verified');
                 return Promise.reject(config.errHandled);
             }
-            if (!sessionHandler.validate(token, email)) {
+            if (!sessionHandler.validate(email, token)) {
                 Response.invalidAuth(res);
                 return Promise.reject(config.errHandled);
             }

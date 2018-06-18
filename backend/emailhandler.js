@@ -1,3 +1,4 @@
+'use strict';
 const _ = require('lodash');
 const mailer = require('nodemailer');
 const config = require('./config.js')
