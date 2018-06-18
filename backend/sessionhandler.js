@@ -5,7 +5,7 @@ const config = require('./config.js');
 class SessionHandler {
     constructor() {
         this.tokens = {
-            testToken: 'test@test.com'
+            testToken: 't@t.c'
         };
     }
 

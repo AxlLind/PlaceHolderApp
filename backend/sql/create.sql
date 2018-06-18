@@ -1,10 +1,11 @@
 -- Contains the user name along with their bcrypt hash
 -- also contains a user_id for internal use in the DB
 CREATE TABLE users (
-    user_id       SERIAL    PRIMARY KEY,
-    email         TEXT      NOT NULL UNIQUE,
-    pw_hash       TEXT      NOT NULL,
-    date_created  TIMESTAMP DEFAULT NOW()
+    user_id        SERIAL    PRIMARY KEY,
+    email          TEXT      NOT NULL UNIQUE,
+    pw_hash        TEXT      NOT NULL,
+    email_verified BOOLEAN   DEFAULT FALSE,
+    date_created   TIMESTAMP DEFAULT NOW()
 );
 
 -- Contains the lists. Each list has an ID, name,
@@ -29,3 +30,5 @@ CREATE TABLE sharedlists (
     user_id       INT       NOT NULL REFERENCES Users(user_id),
     date_created  TIMESTAMP DEFAULT NOW()
 );
+
+INSERT INTO users(email, email_verified, pw_hash) VALUES ('t@t.c', 'TRUE', '$2b$10$gp5zwF5Jv7egjywANQCps.enInSnrRhMZoWTRtZ/6BWT3e2GtOugO');

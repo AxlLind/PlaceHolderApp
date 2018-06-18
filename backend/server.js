@@ -5,6 +5,7 @@ const db             = require('./database.js');
 const Response       = require('./response.js');
 const config         = require('./config.js');
 const sessionHandler = require('./sessionhandler.js');
+const emailHandler   = require('./emailhandler.js');
 const app            = express();
 
 app.use(express.json());
@@ -19,7 +20,7 @@ const verifyProperties = (properties, req, res, next) => {
     if (missingProp)
         return Response.missingParam(res, missingProp);
     next();
-}
+};
 
 /**
  * Returns a middleware function that verifies
@@ -50,14 +51,41 @@ const validateUser = (req, res, next) => {
     if (missingProp)
         return Response.missingParam(res, missingProp);
     const { email, token } = req.body;
-    if (!sessionHandler.validate(token, email))
-        return Response.invalidAuth(res);
-    next();
-}
+    db.checkEmailVerified(email)
+        .then(verified => {
+            if (!verified) {
+                Response.invalidParam(res, 'Email not verified');
+                return Promise.reject(config.errHandled);
+            }
+            if (!sessionHandler.validate(token, email)) {
+                Response.invalidAuth(res);
+                return Promise.reject(config.errHandled);
+            }
+        })
+        .then(() => next())
+        .catch(err => catchUnhandledErr(err, res));
+};
 
 app.post('/version', (req, res) =>
     Response.success(res, 'Version passed', { version: '0.0.1' })
 );
+
+app.get('/verify', (req, res) => {
+    const missingProp = _.find(['email', 'pw_hash'], prop => !_.has(req.query, prop));
+    if (missingProp)
+        return Response.missingParam(res, missingProp);
+    const { email, pw_hash } = req.query;
+    db.getUser(email)
+        .then(user => {
+            if (!_.isEqual(pw_hash, user.pw_hash)) {
+                Response.invalidParam(res, 'Hash does not match');
+                return Promise.reject(config.errHandled);
+            }
+        })
+        .then(() => db.confirmUserEmail(email))
+        .then(() => Response.success(res, 'Email verified'))
+        .catch(err => catchUnhandledErr(err, res));
+});
 
 app.post('/api/testSessionToken', validateUser, (req, res) =>
     Response.success(res, 'Token still valid')
@@ -83,6 +111,10 @@ app.post('/api/requestSessionToken', requireProps('email', 'pw_hash'), (req, res
                 Response.invalidParam(res, 'Unregistered Email');
                 return Promise.reject(config.errHandled);
             }
+            if (!user.email_verified) {
+                Response.invalidParam(res, 'Unverified Email');
+                return Promise.reject(config.errHandled);
+            }
             return user;
         })
         .then(user => bcrypt.compare(pw_hash, user.pw_hash))
@@ -101,6 +133,7 @@ app.post('/api/registerUser', requireProps('email', 'pw_hash'), (req, res) => {
     const { email, pw_hash } = req.body;
     if (!/.+@.+\..+/.test(email)) // ensure it is 'sort of' an email
         return Response.invalidParam(res, 'Does not match an email');
+    let hash;
     db.checkEmail(email)
         .then(exists => {
             if (exists) {
@@ -109,7 +142,9 @@ app.post('/api/registerUser', requireProps('email', 'pw_hash'), (req, res) => {
             }
         })
         .then(() => bcrypt.hash(pw_hash, config.saltRounds))
-        .then(hash => db.createUser(email, hash))
+        .then(bcrypthash => hash = bcrypthash)
+        .then(() => db.createUser(email, hash))
+        .then(() => emailHandler.sendEmailVerification(email, hash))
         .then(() => Response.success(res, 'User created'))
         .catch(err => catchUnhandledErr(err, res));
 });
@@ -182,7 +217,7 @@ app.post('/api/deleteItemFromList', validateUser, requireProps('list_id', 'item'
         .then(() => db.deleteItemFromList(list_id, item))
         .then(() => Response.success(res, 'Item deleted'))
         .catch(err => catchUnhandledErr(err, res));
-})
+});
 
 // Redirects any unspecified paths here, simply return an error
 app.get('*', (req, res) => Response.invalidEndpoint(res));

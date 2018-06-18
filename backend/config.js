@@ -1,4 +1,5 @@
 module.exports = {
+    host: 'localhost',
     port: 3000,
     sessionTime: 1000 * 60 * 10,
     saltRounds: 10,
@@ -9,4 +10,8 @@ module.exports = {
         database: 'shopping_list',
     },
     errHandled: 'errHandled',
+    emailSender: {
+        user: 'axel.ew.lindeberg',
+        pass: 'glhf github..',
+    }
 }

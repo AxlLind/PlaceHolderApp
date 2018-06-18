@@ -15,6 +15,12 @@ class Database {
             .then(rows => !_.isEmpty(rows));
     }
 
+    checkEmailVerified(email) {
+        return knex('users')
+            .where({ email })
+            .then(rows => !_.isEmpty(rows) && rows[0].email_verified);
+    }
+
     checkUserOwnsList(email, list_id) {
         return knex('users')
             .join('lists', 'users.user_id', '=', 'lists.user_id')
@@ -78,6 +84,14 @@ class Database {
     addItemToList(list_id, item) {
         return knex('listitems')
             .insert({ list_id, item });
+    }
+
+    /* UPDATERS */
+
+    confirmUserEmail(email) {
+        return knex('users')
+            .where({ email })
+            .update({ email_verified: 'TRUE' });
     }
 
     /* DELETERS */

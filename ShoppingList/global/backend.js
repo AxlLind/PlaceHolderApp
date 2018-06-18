@@ -25,7 +25,7 @@ class Backend {
         .then(res => res.json())
         .catch(err => Promise.resolve({
             code: codes.fetchErr,
-            message: err.message,
+            message: 'Could not reach server',
         }));
     }
 
