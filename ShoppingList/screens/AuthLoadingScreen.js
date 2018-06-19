@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { View, AsyncStorage, ActivityIndicator } from 'react-native';
 import _ from 'lodash';
 import { colors } from './../global/constants.js';
@@ -6,7 +6,7 @@ import { codes } from './../global/config.js';
 import backend from './../global/backend.js';
 import styles from './../styles.js';
 
-export default class AuthLoadingScreen extends React.Component {
+export default class AuthLoadingScreen extends Component {
     static navigationOptions = { headerMode: 'none' };
 
     componentDidMount() {

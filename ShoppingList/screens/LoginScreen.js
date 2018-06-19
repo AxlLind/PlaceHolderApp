@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { View, TextInput, Text, AsyncStorage } from 'react-native';
 import _ from 'lodash';
 import { config, codes } from './../global/config.js';
@@ -7,11 +7,11 @@ import backend from './../global/backend.js';
 import { primaryButton, secondaryButton } from './../global/shared.js';
 import sha256 from 'sha256';
 
-export default class LoginScreen extends React.Component {
+export default class LoginScreen extends Component {
     static navigationOptions = { title: 'Login' };
 
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         this.state = {
             errText: ' ',
             email: '',

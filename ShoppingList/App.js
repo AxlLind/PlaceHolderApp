@@ -1,10 +1,10 @@
-import React from 'react';
 import { createSwitchNavigator, createStackNavigator } from 'react-navigation';
 import { colors } from './global/constants.js';
-import LoginScreen from './screens/LoginScreen.js';
-import SignUpScreen from './screens/SignUpScreen.js';
-import ListViewerScreen from './screens/ListViewerScreen.js';
-import ListScreen from './screens/ListScreen.js';
+
+import LoginScreen       from './screens/LoginScreen.js';
+import SignUpScreen      from './screens/SignUpScreen.js';
+import ListViewerScreen  from './screens/ListViewerScreen.js';
+import ListScreen        from './screens/ListScreen.js';
 import AuthLoadingScreen from './screens/AuthLoadingScreen.js';
 
 const navStyle = {

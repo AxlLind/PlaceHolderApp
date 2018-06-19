@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { ScrollView, AsyncStorage, Text, View, TextInput } from 'react-native';
 import Modal from 'react-native-modal';
 import _ from 'lodash';
@@ -6,11 +6,11 @@ import { primaryButton, secondaryButton, handleResponse } from './../global/shar
 import backend from './../global/backend.js';
 import styles from './../styles.js';
 
-export default class ListViewerScreen extends React.Component {
+export default class ListViewerScreen extends Component {
     static navigationOptions = { title: 'Your Lists' };
 
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         this.state = {
             lists: [],
             gotLists: false,
