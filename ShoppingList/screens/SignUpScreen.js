@@ -32,14 +32,7 @@ export default class SignUpScreen extends Component {
                 if (!_.isEqual(res.code, codes.success))
                     return Promise.reject(res.message);
             })
-            .then(() => backend.requestSessionToken(email, pw_hash))
-            .then(res => {
-                if (!_.isEqual(res.code, codes.success))
-                    return Promise.reject(res.message);
-                return res.data.token;
-            })
-            .then(token => AsyncStorage.multiSet(_.toPairs({email, token})))
-            .then(() => this.props.navigation.navigate('App'))
+            .then(() => this.props.navigation.navigate('AuthLoading'))
             .catch(message => {
                 if (_.isEqual(typeof message, 'string')) {
                     setTimeout(() => this.setState({ errText: ' ' }), config.errUptime);

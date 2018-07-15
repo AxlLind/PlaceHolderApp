@@ -2,122 +2,123 @@
 const _      = require('lodash');
 const config = require('./config.js');
 const knex   = require('knex')({
-    client: config.dbClient,
-    connection: config.dbConn,
+  client: config.dbClient,
+  connection: config.dbConn,
 });
 
 class Database {
 
-    /* CHECKS */
+  /* CHECKS */
 
-    checkEmail(email) {
-        return knex('users')
-            .where({ email })
-            .then(rows => !_.isEmpty(rows));
-    }
+  checkEmail(email) {
+    return knex('users')
+      .where({ email })
+      .then(rows => !_.isEmpty(rows));
+  }
 
-    checkEmailVerified(email) {
-        return knex('users')
-            .where({ email })
-            .then(rows => !_.isEmpty(rows) && rows[0].email_verified);
-    }
+  checkEmailVerified(email) {
+    return knex('users')
+      .first('email_verified')
+      .where({ email })
+      .then(row => _.get(row, 'email_verified'));
+  }
 
-    checkUserOwnsList(email, list_id) {
-        return knex('users')
-            .join('lists', 'users.user_id', '=', 'lists.user_id')
-            .where({ email, list_id })
-            .then(rows => !_.isEmpty(rows));
-    }
+  checkUserOwnsList(email, list_id) {
+    return knex('users')
+      .join('lists', 'users.user_id', '=', 'lists.user_id')
+      .where({ email, list_id })
+      .then(rows => !_.isEmpty(rows));
+  }
 
-    checkItemInList(list_id, item) {
-        return knex('listitems')
-            .where({ list_id, item })
-            .then(rows => !_.isEmpty(rows));
-    }
+  checkItemInList(list_id, item) {
+    return knex('listitems')
+      .where({ list_id, item })
+      .then(rows => !_.isEmpty(rows));
+  }
 
-    /* GETTERS */
+  /* GETTERS */
 
-    getUser(email) {
-        return knex('users')
-            .where({ email })
-            .then(rows => _.isEmpty(rows) ? {} : rows[0]);
-    }
+  getUser(email) {
+    return knex('users')
+      .where({ email })
+      .then(rows => _.isEmpty(rows) ? {} : rows[0]);
+  }
 
-    getUsersLists(email) {
-        return knex('users')
-            .select('list_id', 'list_name', 'lists.date_created')
-            .join('lists', 'users.user_id', '=', 'lists.user_id')
-            .where({ email });
-    }
+  getUsersLists(email) {
+    return knex('users')
+      .select('list_id', 'list_name', 'lists.date_created')
+      .join('lists', 'users.user_id', '=', 'lists.user_id')
+      .where({ email });
+  }
 
-    getUsersSharedLists(email) {
-        return knex('users')
-            .select('lists.list_id', 'lists.list_name', 'lists.date_created')
-            .join('sharedlists', 'users.user_id', '=', 'sharedlists.user_id')
-            .join('lists', 'sharedlists.list_id', '=', 'lists.list_id')
-            .where({ email });
-    }
+  getUsersSharedLists(email) {
+    return knex('users')
+      .select('lists.list_id', 'lists.list_name', 'lists.date_created')
+      .join('sharedlists', 'users.user_id', '=', 'sharedlists.user_id')
+      .join('lists', 'sharedlists.list_id', '=', 'lists.list_id')
+      .where({ email });
+  }
 
-    getListItems(list_id) {
-        return knex('listitems')
-            .select('item')
-            .where({ list_id })
-            .then(rows => _.map(rows, 'item'));
-    }
+  getListItems(list_id) {
+    return knex('listitems')
+      .select('item')
+      .where({ list_id })
+      .then(rows => _.map(rows, 'item'));
+  }
 
-    /* CREATORS */
+  /* CREATORS */
 
-    createUser(email, pw_hash) {
-        return knex('users')
-            .insert({ email, pw_hash });
-    }
+  createUser(email, pw_hash) {
+    return knex('users')
+      .insert({ email, pw_hash });
+  }
 
-    createList(list_name, email) {
-        return knex('users')
-            .select('user_id')
-            .where({ email })
-            .then(rows => rows[0].user_id)
-            .then(user_id => knex('lists')
-                .insert({ list_name, user_id })
-            );
-    }
+  createList(list_name, email) {
+    return knex('users')
+      .first('user_id')
+      .where({ email })
+      .then(row => row.user_id)
+      .then(user_id => knex('lists')
+        .insert({ list_name, user_id })
+      );
+  }
 
-    addItemToList(list_id, item) {
-        return knex('listitems')
-            .insert({ list_id, item });
-    }
+  addItemToList(list_id, item) {
+    return knex('listitems')
+      .insert({ list_id, item });
+  }
 
-    /* UPDATERS */
+  /* UPDATERS */
 
-    confirmUserEmail(email) {
-        return knex('users')
-            .where({ email })
-            .update({ email_verified: 'TRUE' });
-    }
+  confirmUserEmail(email) {
+    return knex('users')
+      .where({ email })
+      .update({ email_verified: 'TRUE' });
+  }
 
-    /* DELETERS */
+  /* DELETERS */
 
-    deleteList(list_id) {
-        return Promise.resolve()
-            .then(() => knex('sharedlists')
-                .where({ list_id })
-                .del()
-            )
-            .then(() => knex('listitems')
-                .where({ list_id })
-                .del()
-            )
-            .then(() => knex('lists')
-                .where({ list_id })
-                .del()
-            );
-    }
+  deleteList(list_id) {
+    return Promise.resolve()
+      .then(() => knex('sharedlists')
+        .where({ list_id })
+        .del()
+      )
+      .then(() => knex('listitems')
+        .where({ list_id })
+        .del()
+      )
+      .then(() => knex('lists')
+        .where({ list_id })
+        .del()
+      );
+  }
 
-    deleteItemFromList(list_id, item) {
-        return knex('listitems')
-            .where({ list_id, item })
-            .del();
-    }
+  deleteItemFromList(list_id, item) {
+    return knex('listitems')
+      .where({ list_id, item })
+      .del();
+  }
 
 }
 

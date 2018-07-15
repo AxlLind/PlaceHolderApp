@@ -1,6 +1,6 @@
 
 const config = {
-    server: 'http://10.0.3.2:3000',
+    server: 'http://192.168.176.197:3000',
     errUptime: 2000, // ms
 };
 

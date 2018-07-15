@@ -48,8 +48,8 @@ export default class ListScreen extends Component {
                 addItemName: '',
             }))
             .then(() => this.populateItems())
-            .catch(() => {
-                this.setState({addItemErrorText: res.message})
+            .catch(err => {
+                this.setState({addItemErrorText: err.message})
                 setTimeout(() => this.setState({
                     addItemErrorText: '',
                     showAddItem: false,
