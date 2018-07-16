@@ -25,6 +25,7 @@
     "react-native-button": "^2.3.0",
     "react-native-modal": "^6.1.0",
     "react-navigation": "^2.2.5",
-    "sha256": "^0.2.0"
+    "sha256": "^0.2.0",
+    "superagent": "^3.8.3"
   }
 }

@@ -1,51 +1,58 @@
+'use strict';
+import request from 'superagent';
 import { config, codes } from './config.js'
 
+const fetchErr = {
+  code: codes.fetchErr,
+  message: 'Could not reach server'
+};
+
+const authHeader = (email, token) => `${email} ${token}`;
+
 class Backend {
-    version()                                       { return this.getReq({}, '/version'); }
-    registerUser(email, pw_hash)                    { return this.postReq({email, pw_hash}, '/api/registerUser'); }
-    requestSessionToken(email, pw_hash)             { return this.postReq({email, pw_hash}, '/api/requestSessionToken'); }
-    getLists(email, token)                          { return this.postReq({email, token}, '/api/getLists'); }
-    getSharedLists(email, token)                    { return this.postReq({email, token}, '/api/getSharedLists'); }
-    testSessionToken(email, token)                  { return this.postReq({email, token}, '/api/testSessionToken'); }
-    getListItems(email, token, list_id)             { return this.postReq({email, token, list_id}, '/api/getListItems'); }
-    deleteList(email, token, list_id)               { return this.postReq({email, token, list_id}, '/api/deleteList'); }
-    createList(email, token, list_name)             { return this.postReq({email, token, list_name}, '/api/createList'); }
-    addItemToList(email, token, list_id, item)      { return this.postReq({email, token, list_id, item}, '/api/addItemToList'); }
-    deleteItemFromList(email, token, list_id, item) { return this.postReq({email, token, list_id, item}, '/api/deleteItemFromList'); }
+  ping() { return this.get('/'); }
 
-    toQueryParams(obj) {
-        let s = '?';
-        for (let prop in obj)
-            s += `${prop}=${obj[prop]}`;
-        return s.slice(0, -1);
-    }
+  /* User endpoint */
+  requestSessionToken(email, pw_hash) { return this.get('/user', authHeader(email, pw_hash)); }
+  registerUser(email, pw_hash)        { return this.post('/user', authHeader(email, pw_hash)); }
+  testSessionToken(email, token)      { return this.get('/user/test_token', authHeader(email, token)); }
 
-    getReq(params, endpoint) {
-        const query = _.isEmpty(params) ? '' : this.toQueryParams(params);
-        return fetch(`${config.server}${endpoint}${query}`)
-            .then(res => res.json())
-            .catch(() => Promise.resolve({
-                code: codes.fetchErr,
-                message: 'Could not reach server'
-            }));
-    }
+  /* Lists endpoint */
+  getLists(email, token)              { return this.get('/lists', authHeader(email, token)); }
+  createList(email, token, list_name) { return this.post('/lists', authHeader(email, token), { list_name }); }
+  deleteList(email, token, list_id)   { return this.delete('/lists', authHeader(email, token), { list_id }); }
 
-    postReq(params, endpoint) {
-        return fetch(`${config.server}${endpoint}`, {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(params)
-        })
-        .then(res => res.json())
-        .catch(() => Promise.resolve({
-            code: codes.fetchErr,
-            message: 'Could not reach server',
-        }));
-    }
+  /* List endpoint */
+  getListItems(email, token, list_id)             { return this.get(`/lists/${list_id}`, authHeader(email, token)); }
+  addItemToList(email, token, list_id, item)      { return this.post(`/lists/${list_id}`, authHeader(email, token), { item }); }
+  deleteItemFromList(email, token, list_id, item) { return this.delete(`/lists/${list_id}`, authHeader(email, token), { item }); }
 
+  get(endpoint, authHeader, params = {}) {
+    return request
+      .get(`${config.server}${endpoint}`)
+      .query(params)
+      .set('Authorization', authHeader)
+      .then(res => res.json())
+      .catch(() => Promise.resolve(fetchErr));
+  }
+
+  post(endpoint, authHeader, params = {}) {
+    return request
+      .post(`${config.server}${endpoint}`)
+      .send(params)
+      .set('Authorization', authHeader)
+      .then(res => res.json())
+      .catch(() => Promise.resolve(fetchErr));
+  }
+
+  delete(endpoint, authHeader, params = {}) {
+    return request
+      .delete(`${config.server}${endpoint}`)
+      .send(params)
+      .set('Authorization', authHeader)
+      .then(res => res.json())
+      .catch(() => Promise.resolve(fetchErr));
+  }
 }
 
 export default new Backend();

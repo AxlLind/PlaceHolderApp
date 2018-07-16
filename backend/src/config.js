@@ -11,6 +11,7 @@ module.exports = {
   },
   errHandled: 'errHandled',
   emailSender: {
-    user: 'axel.ew.lindeberg',
+    user: "",
+    pass: ""
   }
 }

@@ -3,6 +3,7 @@
     "bcrypt": "^2.0.1",
     "express": "^4.16.3",
     "express-session": "^1.15.6",
+    "helmet": "^3.12.1",
     "knex": "^0.14.6",
     "lodash": "^4.17.10",
     "nodemailer": "^4.6.7",

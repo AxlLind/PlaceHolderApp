@@ -1,15 +1,15 @@
 'use strict';
 const _ = require('lodash');
+const catchUnhandledErr = require('../utils/catchErr.js');
 
 /**
 * Express middleware. Passes forward if the supplied token is valid.
 * Otherwise sends an invalidAuth response.
 */
-const validateUser = (req, res, next) => {
-  const missingProp = _.find(['email', 'token'], prop => !_.has(req.body, prop));
-  if (missingProp)
-    return Response.missingParam(res, missingProp);
-  const { email, token } = req.body;
+function authUser(req, res, next) {
+  const { email, token } = req;
+  if ([email, pw_hash].some(_.isUndefined))
+    return Response.missingParam(res, 'Invalid auth header');
   db.checkEmailVerified(email)
     .then(verified => {
       if (!verified) {
@@ -25,4 +25,4 @@ const validateUser = (req, res, next) => {
     .catch(err => catchUnhandledErr(err, res));
 };
 
-module.exports = validateUser;
+module.exports = authUser;
