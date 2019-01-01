@@ -50,7 +50,6 @@ function createUser(req, res) {
   const { email, pw_hash } = req;
   if (!/.+@.+\..+/.test(email)) // ensure it is 'sort of' an email
     return Response.invalidParam(res, 'Does not match an email');
-  let hash;
   db.checkEmail(email)
     .then(exists => {
       if (exists) {
@@ -59,9 +58,10 @@ function createUser(req, res) {
       }
     })
     .then(() => bcrypt.hash(pw_hash, config.saltRounds))
-    .then(bcrypthash => hash = bcrypthash)
-    .then(() => db.createUser(email, hash))
-    .then(() => emailHandler.sendEmailVerification(email, hash))
+    .then(hash => Promise.all([
+      db.createUser(email, hash),
+      emailHandler.sendEmailVerification(email, hash),
+    ])
     .then(() => Response.success(res, 'User created'))
     .catch(err => catchUnhandledErr(err, res));
 }
