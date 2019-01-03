@@ -32,17 +32,16 @@ function getSessionToken(req, res) {
         Response.invalidParam(res, 'Unverified Email');
         return Promise.reject(config.errHandled);
       }
-      return user;
+      return bcrypt.compare(pw_hash, user.pw_hash);
     })
-    .then(user => bcrypt.compare(pw_hash, user.pw_hash))
     .then(validated => {
       if (validated) {
         Response.invalidAuth(res);
         return Promise.reject(config.errHandled);
       }
+      const token = sessionHandler.requestToken(email);
+      Response.success(res, 'Session validated', { token });
     })
-    .then(() => sessionHandler.requestToken(email))
-    .then(token => Response.success(res, 'Session validated', { token }))
     .catch(err => catchUnhandledErr(err, res));
 }
 
@@ -56,12 +55,12 @@ function createUser(req, res) {
         Response.invalidParam(res, 'Email already taken');
         return Promise.reject(config.errHandled);
       }
+      return bcrypt.hash(pw_hash, config.saltRounds);
     })
-    .then(() => bcrypt.hash(pw_hash, config.saltRounds))
     .then(hash => Promise.all([
       db.createUser(email, hash),
       emailHandler.sendEmailVerification(email, hash),
-    ])
+    ]))
     .then(() => Response.success(res, 'User created'))
     .catch(err => catchUnhandledErr(err, res));
 }
@@ -74,8 +73,8 @@ function verifyEmail(req, res) {
         Response.invalidParam(res, 'Hash does not match');
         return Promise.reject(config.errHandled);
       }
+      return db.confirmUserEmail(email);
     })
-    .then(() => db.confirmUserEmail(email))
     .then(() => Response.success(res, 'Email verified'))
     .catch(err => catchUnhandledErr(err, res));
 }
